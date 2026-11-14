@@ -20,10 +20,13 @@ GATE_BAND = 0.0005                   # ladder entry needs close >= SMA * (1 + GA
 RUNG_FRACTIONS = (0.5, 0.5)          # ladder rungs as fractions of equity at ladder start
 RUNG_DROPS = (0.0, 0.006)            # rung i is added when close <= first_close * (1 - RUNG_DROPS[i])
 TARGET_UNITS = 3_000_000             # bank the ladder once marked equity gain >= 3 USDC net of estimated exit cost
+TARGET_MIN_UNITS = 1_000_000         # late-window ladder target: 1 USDC
+DECAY_START_BAR = 600                # the ladder target starts to decay after this seq
+DECAY_END_BAR = 1300                 # ... and reaches TARGET_MIN_UNITS at this seq
 EXIT_COST_BPS = 9                    # estimated cost of selling the position, in bps of its value
 LADDER_STOP = 0.02                   # give up the ladder when close <= first_close * (1 - LADDER_STOP)
 LADDER_LAST_BAR = 1200               # no new ladder after this seq
-DONE_UNITS = 2_000_000               # when flat with equity >= start + 2 USDC: no new entries for the rest of the window
+DONE_UNITS = 600_000                 # when flat with equity >= start + 0.6 USDC: no new entries for the rest of the window
 TWAP_IN = 5                          # ladder buys are cut into this many slices, one per bar
 TWAP_OUT = 3                         # exits are cut into this many slices, one per bar
 WASH_HIGH_BARS = 240                 # washout: rolling high window
@@ -62,6 +65,15 @@ def load_seed():
 SEED_T, SEED_C = load_seed()
 
 
+def ladder_target(k):
+    """Ladder profit target on scored bar k: TARGET_UNITS, decaying linearly to TARGET_MIN_UNITS."""
+    if k <= DECAY_START_BAR:
+        return TARGET_UNITS
+    if k >= DECAY_END_BAR:
+        return TARGET_MIN_UNITS
+    return TARGET_UNITS + (TARGET_MIN_UNITS - TARGET_UNITS) * (k - DECAY_START_BAR) / (DECAY_END_BAR - DECAY_START_BAR)
+
+
 class Bot:
     def __init__(self):
         self.closes = None
@@ -80,7 +92,8 @@ class Bot:
         self.pending = {}
 
     def on_batch(self, state, batch):
-        k = batch["seq"]
+        # bar count within the scored window, after any warm-up
+        k = batch["seq"] - state.warmup_bars
 
         # 1. the CBBTC bar
         bar = None
@@ -114,6 +127,10 @@ class Bot:
         eq = state.equity
         held = state.positions.get(SYMBOL)
         qty = held.qty if held is not None else 0
+
+        # orders during a warm-up are rejected
+        if state.warming_up:
+            return []
 
         # 4. orders on the last batch are rejected
         if k >= WINDOW_BARS - 1:
@@ -149,7 +166,7 @@ class Bot:
         elif self.mode == LADDER:
             pos_value = state.value(SYMBOL, qty)
             est = pos_value * EXIT_COST_BPS // 10000
-            if qty > 0 and eq - est >= self.base_equity + TARGET_UNITS:
+            if qty > 0 and eq - est >= self.base_equity + ladder_target(k):
                 self.mode = EXIT
                 self.sell_slices = TWAP_OUT
                 self.ladder_done = True

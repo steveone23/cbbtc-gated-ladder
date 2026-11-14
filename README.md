@@ -9,9 +9,10 @@ Python 3.13, standard library only, deterministic (no network, clock or randomne
 - Trend-gated two-step entry: when flat and the close is at least 0.05% above its
   4-hour simple moving average, buy half of equity; if price then dips 0.6% below
   the first close, add the other half.
-- Profit target: once marked equity is up 3 USDC net of an estimated exit cost,
-  sell everything. After that, if equity is at least 2 USDC above the start, the
-  bot stops opening new positions for the rest of the window.
+- Profit target: once marked equity is up by the target net of an estimated exit
+  cost, sell everything. The target is 3 USDC, decaying linearly to 1 USDC
+  between bar 600 and bar 1300. Once flat with equity at least 0.6 USDC above the
+  start, the bot opens no new positions for the rest of the window.
 - Stop: the ladder is abandoned if price falls 2% below its first close.
 - Washout bounce: a rare second entry after a 4% drop from the 4-hour high,
   bought only on a modest bounce off the 30-minute low, with a 2% take profit
