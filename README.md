@@ -7,7 +7,7 @@ Python 3.13, standard library only, deterministic (no network, clock or randomne
 ## Strategy
 
 - Trend-gated two-step entry: when flat and the close is at least 0.05% above its
-  4-hour simple moving average, buy half of equity; if price then dips 0.6% below
+  4-hour simple moving average, buy half of equity; if price then dips 0.4% below
   the first close, add the other half.
 - Profit target: once marked equity is up by the target net of an estimated exit
   cost, sell everything. The target is 3 USDC, decaying linearly to 1 USDC

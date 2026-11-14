@@ -18,7 +18,7 @@ MIN_NOTIONAL = 1_000_000             # 1 USDC
 SMA_BARS = 240                       # trend gate: 4-hour simple moving average of closes
 GATE_BAND = 0.0005                   # ladder entry needs close >= SMA * (1 + GATE_BAND)
 RUNG_FRACTIONS = (0.5, 0.5)          # ladder rungs as fractions of equity at ladder start
-RUNG_DROPS = (0.0, 0.006)            # rung i is added when close <= first_close * (1 - RUNG_DROPS[i])
+RUNG_DROPS = (0.0, 0.004)           # rung i is added when close <= first_close * (1 - RUNG_DROPS[i])
 TARGET_UNITS = 3_000_000             # bank the ladder once marked equity gain >= 3 USDC net of estimated exit cost
 TARGET_MIN_UNITS = 1_000_000         # late-window ladder target: 1 USDC
 DECAY_START_BAR = 600                # the ladder target starts to decay after this seq
